@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>BIJLA RAM - Smart Stock Manager</title>
     
-    <!-- मोबाइल स्क्रीन और स्टेटस बार अनुकूलन -->
+    <!-- मोबाइल स्क्रीन और एंड्रॉइड स्टेटस बार अनुकूलन -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#1e3a8a">
+
+    <!-- इनलाइन वेब ऐप मैनिफेस्ट (PWABuilder में एरर खत्म करने हेतु) -->
+    <link rel="manifest" href="data:application/manifest+json;utf-8,%7B%22name%22%3A%22BIJLA%20RAM%20Stock%20Manager%22%2C%22short_name%22%3A%22StockManager%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231e3a8a%22%2C%22theme_color%22%3A%22%231e3a8a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fi.ibb.co%2FVYTvQf1T%2F1001252039.jpg%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fjpeg%22%2C%22purpose%22%3A%22any%20maskable%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fi.ibb.co%2FVYTvQf1T%2F1001252039.jpg%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fjpeg%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
     
-    <!-- टेलविंड सीएसएस, शीट पार्सर और फॉन्ट-ऑसम आइकन्स -->
+    <!-- टेलविंड सीएसएस, एक्सेल पार्सर और आइकन्स -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -23,16 +26,16 @@
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
         body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; overflow-x: hidden; color: #1e293b; -webkit-tap-highlight-color: transparent; }
 
-        /* स्प्लैश स्क्रीन स्टाइल */
+        /* स्प्लैश स्क्रीन डिजाइन */
         #splash {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle, #1e3a8a 0%, #172554 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 9999; text-align: center; padding: 20px; transition: opacity 0.8s ease;
         }
-        .splash-img { width: 150px; height: 150px; border-radius: 50%; border: 4px solid #f59e0b; box-shadow: 0 0 30px rgba(245, 158, 11, 0.5); object-fit: cover; }
+        .splash-img { width: 140px; height: 140px; border-radius: 50%; border: 4px solid #f59e0b; box-shadow: 0 0 30px rgba(245, 158, 11, 0.5); object-fit: cover; }
 
-        /* मुख्य कार्ड्स और इनपुट्स */
+        /* कार्ड और इनपुट फील्ड्स */
         .premium-card { background: white; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         .input-line { border-bottom: 2px solid #e2e8f0; transition: all 0.3s; padding: 10px 5px; width: 100%; text-transform: uppercase; font-weight: 600; }
         .input-line:focus { border-color: #1e3a8a; outline: none; background: #f0f7ff; }
@@ -115,7 +118,7 @@
                 <div class="grid grid-cols-1 gap-3 mb-3">
                     <div>
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Description</label>
-                        <!-- आपके निर्देशानुसार प्लेसहोल्डर में नाम और नंबर जोड़ा गया है -->
+                        <!-- आपके निर्देशानुसार नाम और नंबर -->
                         <input type="text" id="desc" placeholder="बिजलाराम 7667221999" class="input-line">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
@@ -354,22 +357,4 @@
                     });
                     driveFileId = res.result.id;
                 } else {
-                    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Authorization': 'Bearer ' + gapi.client.getToken().access_token,
-                            'Content-Type': 'application/json'
-                        },
-                        body: content
-                    });
-                }
-            } catch (err) {
-                console.error("ड्राइव सेव त्रुटि:", err);
-            } finally {
-                document.getElementById('syncIndicator').classList.add('hidden');
-            }
-        }
-
-        function save() {
-            const d = dI.value.trim().toUpperCase(), q = parseFloat(qI.value), r = parseFloat(rI.value);
-            if(!d || i
+                    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileI
