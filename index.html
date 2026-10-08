@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>BIJLA RAM - Smart Stock Manager</title>
+    
+    <!-- मोबाइल स्क्रीन और एंड्रॉइड स्टेटस बार अनुकूलन -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1e3a8a">
+
+    <!-- अलग से बनाई गई मैनिफेस्ट फ़ाइल का सीधा लिंक ताकि पीडब्ल्यूए बिल्डर में एरर न आए -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- टेलविंड सीएसएस, एक्सेल पार्सर और आइकन्स -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- गूगल पहचान सेवाएं और ड्राइव एपीआई लाइब्रेरी -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; overflow-x: hidden; color: #1e293b; -webkit-tap-highlight-color: transparent; }
+
+        /* स्प्लैश स्क्रीन आरंभिक स्वरूप */
+        #splash {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, #1e3a8a 0%, #172554 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; text-align: center; padding: 20px; transition: opacity 0.8s ease;
+        }
+        .splash-img { width: 140px; height: 140px; border-radius: 50%; border: 4px solid #f59e0b; box-shadow: 0 0 30px rgba(245, 158, 11, 0.5); object-fit: cover; }
+
+        /* कार्ड और प्रविष्टि इनपुट रेखाएं */
+        .premium-card { background: white; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .input-line { border-bottom: 2px solid #e2e8f0; transition: all 0.3s; padding: 10px 5px; width: 100%; text-transform: uppercase; font-weight: 600; }
+        .input-line:focus { border-color: #1e3a8a; outline: none; background: #f0f7ff; }
+        
+        .summary-box { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 65px; border-radius: 20px; color: white; }
+        .summary-label { font-size: 10px; font-weight: 700; text-transform: uppercase; opacity: 0.8; }
+        .summary-value { font-size: 18px; font-weight: 800; }
+
+        .footer-premium { background: #b91c1c; color: white; padding: 14px; text-align: center; font-weight: 800; font-size: 11px; letter-spacing: 2px; width: 100%; }
+        .delete-mode .chk-col { display: table-cell !important; animation: slideIn 0.3s forwards; }
+        .chk-col { display: none; width: 45px; text-align: center; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+    </style>
+</head>
+<body>
+
+    <!-- स्प्लैश स्क्रीन (प्रारंभिक लोडिंग दृश्य) -->
+    <div id="splash">
+        <img src="https://i.ibb.co/VYTvQf1T/1001252039.jpg" class="splash-img mb-6" alt="Bijla Ram">
+        <h1 class="text-white text-3xl font-extrabold mb-1">BIJLA RAM</h1>
+        <p class="text-amber-400 font-bold text-xs mb-8 uppercase tracking-widest">Professional Android Developer</p>
+        <button onclick="startApp()" class="bg-amber-500 hover:bg-amber-600 text-white px-12 py-4 rounded-full font-black shadow-2xl active:scale-95 transition-all">START SYSTEM</button>
+    </div>
+
+    <!-- प्रमाणीकरण स्क्रीन (गूगल ड्राइव से जोड़ने का दृश्य) -->
+    <div id="authScreen" style="display: none;" class="min-h-screen flex items-center justify-center p-4 bg-slate-100">
+        <div class="premium-card p-6 w-full max-w-md shadow-2xl text-center">
+            <img src="https://i.ibb.co/VYTvQf1T/1001252039.jpg" class="w-16 h-16 rounded-full mx-auto mb-3 border-2 border-amber-500 object-cover" alt="Bijla Ram">
+            <h2 class="text-xl font-black text-blue-900 mb-1">Google Drive सिंक लॉगिन</h2>
+            <p class="text-xs text-gray-500 mb-6 font-medium">आपका डेटा 100% आपकी निजी Google Drive में रहेगा। डेवलपर के पास आपका कोई डेटा नहीं आता।</p>
+            
+            <button onclick="handleAuthClick()" class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 py-3.5 px-4 rounded-xl text-gray-700 font-bold text-sm shadow hover:bg-gray-50 active:scale-95 transition-all">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="Google">
+                Google से कनेक्ट करें
+            </button>
+            <div id="driveMsg" class="text-xs text-blue-800 font-medium mt-4"></div>
+        </div>
+    </div>    <!-- मुख्य अनुप्रयोग भाग (मोबाइल और वेब दोनों के लिए सुसंगत दृश्य) -->
+    <div id="appBody" style="display: none; opacity: 0; transition: opacity 0.8s;">
+        <header class="bg-[#1e3a8a] text-white p-3 flex items-center justify-between sticky top-0 z-50 shadow-lg">
+            <div class="flex items-center gap-3">
+                <img src="https://i.ibb.co/VYTvQf1T/1001252039.jpg" class="w-12 h-12 rounded-full border-2 border-amber-400 object-cover" alt="Bijla Ram">
+                <div>
+                    <h1 class="text-lg font-bold leading-none">BIJLA RAM</h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="text-yellow-400 font-bold text-[10px]">7667221999</span>
+                        <a href="tel:7667221999" class="text-blue-300 text-[10px]"><i class="fas fa-phone-alt"></i></a>
+                        <a href="https://wa.me/917667221999" class="text-green-400 text-[10px]"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                    <div class="text-[9px] text-green-300 font-mono mt-0.5" id="userEmailBadge"><i class="fab fa-google-drive"></i> व्यक्तिगत ड्राइव एक्टिव</div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <!-- डेटा सिंकिंग स्थिति सूचक -->
+                <span id="syncIndicator" class="text-[10px] bg-blue-800 px-2 py-1 rounded text-amber-300 font-bold hidden"><i class="fas fa-sync fa-spin"></i> सिंक</span>
+                <button onclick="exportExcel()" title="Export" class="bg-green-600 w-9 h-9 rounded-lg flex items-center justify-center shadow active:scale-90"><i class="fas fa-file-export text-sm"></i></button>
+                <label title="Import" class="bg-orange-500 w-9 h-9 rounded-lg flex items-center justify-center shadow cursor-pointer active:scale-90">
+                    <i class="fas fa-file-import text-sm"></i>
+                    <input type="file" id="xlInp" accept=".xlsx, .xls" class="hidden" onchange="handleImport(event)">
+                </label>
+                <button onclick="handleSignoutClick()" title="Disconnect" class="bg-red-600 w-9 h-9 rounded-lg flex items-center justify-center shadow active:scale-90"><i class="fas fa-sign-out-alt text-sm"></i></button>
+            </div>
+        </header>
+
+        <main class="p-3 max-w-5xl mx-auto w-full">
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-blue-600 summary-box shadow-md">
+                    <span class="summary-label">Items Count</span>
+                    <span id="totalItems" class="summary-value">0</span>
+                </div>
+                <div class="bg-red-600 summary-box shadow-md">
+                    <span class="summary-label">Total Amount</span>
+                    <span id="grandTotal" class="summary-value">₹ 0.00</span>
+                </div>
+            </div>
+
+            <div class="premium-card p-5 mb-4">
+                <div class="grid grid-cols-1 gap-3 mb-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Description</label>
+                        <!-- उपयोगकर्ता निर्देशानुसार नाम और संपर्क संख्या -->
+                        <input type="text" id="desc" placeholder="बिजलाराम 7667221999" class="input-line">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Qty</label>
+                            <input type="number" id="qty" placeholder="0" class="input-line">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Rate (₹)</label>
+                            <input type="number" id="rate" placeholder="0.00" class="input-line">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t">
+                    <div class="bg-blue-50 text-blue-800 px-3 py-1 rounded-lg font-black text-[10px]">SUBTOTAL: <span id="rowSub">₹ 0.00</span></div>
+                    <div class="flex gap-2">
+                        <button id="saveBtn" onclick="save()" class="bg-[#1e3a8a] text-white px-8 py-2 rounded-xl font-bold shadow-md active:scale-95 text-xs">SAVE</button>
+                        <button id="singleDelBtn" onclick="deleteSingle()" class="hidden bg-red-600 text-white px-4 py-2 rounded-xl font-bold shadow-md active:scale-95"><i class="fas fa-trash"></i></button>
+                        <button onclick="resetInputs()" class="bg-gray-100 text-gray-400 px-3 py-2 rounded-xl"><i class="fas fa-undo text-xs"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 mb-3">
+                <div class="relative flex-1">
+                    <i class="fas fa-search absolute left-4 top-3 text-gray-300"></i>
+                    <input type="text" id="srch" onkeyup="draw()" placeholder="SEARCH (A-Z AUTO)..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-100 shadow-sm outline-none font-medium text-sm">
+                </div>
+                <button id="delModeBtn" onclick="toggleDel()" class="bg-white border border-gray-100 text-gray-300 w-11 h-11 rounded-xl flex items-center justify-center shadow-sm"><i class="fas fa-tasks"></i></button>
+            </div>
+
+            <div id="delPanel" class="hidden mb-3 p-3 bg-red-600 text-white rounded-2xl flex items-center justify-between shadow-xl">
+                <span class="font-bold text-[10px]" id="selTxt">0 SELECTED</span>
+                <div class="flex gap-2">
+                    <button onclick="bulkDel()" class="bg-white text-red-600 px-4 py-1.5 rounded-lg font-black text-[10px] uppercase">Confirm Delete</button>
+                    <button onclick="toggleDel()" class="bg-red-800 px-4 py-1.5 rounded-lg font-bold text-[10px] uppercase">Cancel</button>
+                </div>
+            </div>
+
+            <div class="premium-card overflow-hidden">
+                <div class="overflow-x-auto max-h-[380px]">
+                    <table class="w-full text-sm" id="mainTbl">
+                        <thead class="bg-gray-50 text-[9px] text-gray-400 uppercase tracking-widest border-b">
+                            <tr>
+                                <th class="chk-col p-3"><input type="checkbox" id="masterChk" onchange="selectAll()"></th>
+                                <th class="p-3 text-left">Description</th>
+                                <th class="p-3 text-center">Qty</th>
+                                <th class="p-3 text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody" class="divide-y divide-gray-50 font-bold text-gray-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+        <footer class="footer-premium">DEVELOPER : BIJLA RAM DEWASI JUNJANI</footer>
+    </div>    <script>
+        // गूगल ड्राइव एपीआई का प्रारंभिक विन्यास
+        const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+        const API_KEY = 'YOUR_GOOGLE_API_KEY';
+        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+        
+        // केवल इस ऐप द्वारा निर्मित फाइल तक पहुंच की अनुमति
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+        let driveFileId = null;
+        const DRIVE_FILENAME = "smart_stock_db.json";
+
+        // स्थानीय कैश स्मृति सुरक्षित करने हेतु
+        let db = JSON.parse(localStorage.getItem('BR_FINAL_DB_V11')) || [];
+        let delMode = false;
+        let editIdx = -1;
+
+        // एंटर कुंजी दबाने पर अगले खाने में जाने का तर्क
+        const dI = document.getElementById('desc'), qI = document.getElementById('qty'), rI = document.getElementById('rate');
+        dI.onkeydown = (e) => { if(e.key==="Enter"){ e.preventDefault(); qI.focus(); } };
+        qI.onkeydown = (e) => { if(e.key==="Enter"){ e.preventDefault(); rI.focus(); } };
+        rI.onkeydown = (e) => { if(e.key==="Enter"){ e.preventDefault(); save(); } };
+
+        // उप-योग राशि की गणना का तर्क
+        const updateSub = () => {
+            const q = parseFloat(qI.value) || 0, r = parseFloat(rI.value) || 0;
+            document.getElementById('rowSub').innerText = fmt(q * r);
+        };
+        qI.oninput = updateSub; rI.oninput = updateSub;
+
+        // मुद्रा प्रारूप सजावट फलन
+        function fmt(n) { return '₹ ' + parseFloat(n).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'); }
+
+        // विंडो लोड होने पर गूगल लाइब्रेरी शुरू करना
+        window.addEventListener('load', () => {
+            gapiLoaded();
+            gisLoaded();
+        });
+
+        // गैपी लाइब्रेरी लोड फलन
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
+        }
+
+        // गूगल क्लाइंट आरंभिक फलन
+        async function initializeGapiClient() {
+            try {
+                await gapi.client.init({
+                    apiKey: API_KEY,
+                    discoveryDocs: [DISCOVERY_DOC],
+                });
+                gapiInited = true;
+            } catch(e) {
+                console.error("GAPI आरंभ करने में त्रुटि:", e);
+            }
+        }
+
+        // गूगल पहचान सेवा टोकन क्लाइंट आरंभ फलन
+        function gisLoaded() {
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: '',
+                });
+                gisInited = true;
+            } catch(e) {
+                console.error("GIS आरंभ करने में त्रुटि:", e);
+            }
+        }
+
+        // एप्लिकेशन शुरू करने का फलन
+        function startApp() {
+            document.getElementById('splash').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('splash').style.display = 'none';
+                const savedToken = localStorage.getItem('gdrive_token');
+                if (savedToken && gapi.client) {
+                    gapi.client.setToken({ access_token: savedToken });
+                    showMainApp();
+                    loadFromUserDrive();
+                } else {
+                    document.getElementById('authScreen').style.display = 'flex';
+                }
+            }, 800);
+        }
+
+        // गूगल लॉगिन बटन दबाने पर प्रक्रिया
+        function handleAuthClick() {
+            if(!tokenClient) {
+                alert("Google सेवाएं अभी तैयार हो रही हैं, कृपया कुछ सेकंड प्रतीक्षा करें।");
+                return;
+            }
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) {
+                    throw (resp);
+                }
+                localStorage.setItem('gdrive_token', resp.access_token);
+                document.getElementById('authScreen').style.display = 'none';
+                showMainApp();
+                await loadFromUserDrive();
+            };
+
+            if (gapi.client.getToken() === null) {
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } else {
+                tokenClient.requestAccessToken({ prompt: '' });
+            }
+        }
+
+        // लॉगआउट करने और टोकन हटाने का फलन
+        function handleSignoutClick() {
+            const token = gapi.client.getToken();
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token);
+                gapi.client.setToken('');
+                localStorage.removeItem('gdrive_token');
+                driveFileId = null;
+                db = [];
+                draw();
+                document.getElementById('appBody').style.display = 'none';
+                document.getElementById('authScreen').style.display = 'flex';
+            }
+        }
+
+        // मुख्य ऐप दृश्य प्रदर्शित करने का फलन
+        function showMainApp() {
+            document.getElementById('appBody').style.display = 'block';
+            setTimeout(() => document.getElementById('appBody').style.opacity = '1', 50);
+            draw();
+        }
+
+        // उपयोगकर्ता के गूगल ड्राइव से स्टॉक डेटा लोड करने का तर्क
+        async function loadFromUserDrive() {
+            try {
+                document.getElementById('syncIndicator').classList.remove('hidden');
+                const response = await gapi.client.drive.files.list({
+                    q: `name = '${DRIVE_FILENAME}' and trashed = false`,
+                    fields: 'files(id, name)',
+                    spaces: 'drive',
+                });
+                const files = response.result.files;
+                if (files && files.length > 0) {
+                    driveFileId = files[0].id;
+                    const fileData = await gapi.client.drive.files.get({
+                        fileId: driveFileId,
+                        alt: 'media',
+                    });
+                    if (fileData.result && Array.isArray(fileData.result)) {
+                        db = fileData.result;
+                        localStorage.setItem('BR_FINAL_DB_V11', JSON.stringify(db));
+                        draw();
+                    }
+                } else {
+                    await saveToUserDrive();
+                }
+            } catch (err) {
+                console.error("ड्राइव से डेटा लोड करने में त्रुटि:", err);
+            } finally {
+                document.getElementById('syncIndicator').classList.add('hidden');
+            }
+        }
+
+        // उपयोगकर्ता के गूगल ड्राइव में स्टॉक डेटा सुरक्षित करने का तर्क
+        async function saveToUserDrive() {
+            try {
+                document.getElementById('syncIndicator').classList.remove('hidden');
+                const content = JSON.stringify(db);
+
+                if (!driveFileId) {
+                    const metadata = {
+                        name: DRIVE_FILENAME,
+                        mimeType: 'application/json',
+                    };
+                    const res = await gapi.client.drive.files.create({
+                        resource: metadata,
+                        media: {
+                            mimeType: 'application/json',
+                            body: content
+                        },
+                        fields: 'id'
+                    });
+                    driveFileId = res.result.id;
+                } else {
+                    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': 'Bearer ' + gapi.client.getToken().access_token,
+                            'Content-Type': 'application/json'
+                        },
+                        body: content
+                    });
+                }
+            } catch (err) {
+                console.error("ड्राइव में डेटा सुरक्षित करने में त्रुटि:", err);
+            } finally {
+                document.getElementById('syncIndicator').classList.add('hidden');
+            }
+        }
+
+        // नया आइटम जोड़ने या पुराने आइटम को अद्यतन करने का फलन
+        function save() {
+            const d = dI.value.trim().toUpperCase(), q = parseFloat(qI.value), r = parseFloat(rI.value);
+            if(!d || isNaN(q) || q <= 0) { alert("Invalid Entry!"); return; }
+            const item = { d, q, r, t: q * r };
+            if(editIdx === -1) db.push(item);
+            else { db[editIdx] = item; editIdx = -1; }
+            sync(); resetInputs();
+        }
+
+        // डेटाबेस स्थानीय रूप से सहेजने और ड्राइव पर सिंक करने का फलन
+        function sync() {
+            db.sort((a,b) => a.d.localeCompare(b.d));
+            localStorage.setItem('BR_FINAL_DB_V11', JSON.stringify(db));
+            saveToUserDrive();
+            draw();
+        }
+
+        // सूची सारणी में सभी मदों को प्रदर्शित करने का फलन
+        function draw() {
+            const qry = document.getElementById('srch').value.toLowerCase();
+            const body = document.getElementById('tbody');
+            body.innerHTML = '';
+            let fT = 0, fC = 0;
+            db.forEach((it, i) => {
+                if(it.d.toLowerCase().includes(qry)) {
+                    fC++; fT += it.t;
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-blue-50 cursor-pointer transition-all";
+                    tr.onclick = () => {
+                        if(delMode) return;
+                        editIdx=i; dI.value=it.d; qI.value=it.q; rI.value=it.r; updateSub();
+                        document.getElementById('saveBtn').innerText="UPDATE";
+                        document.getElementById('singleDelBtn').classList.remove('hidden');
+                        window.scrollTo({top:0, behavior:'smooth'});
+                    };
+                    tr.innerHTML = `<td class="chk-col p-3" onclick="event.stopPropagation()"><input type="checkbox" class="row-chk" data-i="${i}" onchange="updateSel()"></td>
+                    <td class="p-3 text-[11px] leading-tight">${it.d}</td><td class="p-3 text-center text-gray-400 text-xs">${it.q}</td>
+                    <td class="p-3 text-right text-blue-900 text-xs">${fmt(it.t)}</td>`;
+                    body.appendChild(tr);
+                }
+            });
+            document.getElementById('totalItems').innerText = fC;
+            document.getElementById('grandTotal').innerText = fmt(fT);
+        }
+
+        // एक्सेल फाइल से डेटा पढ़ने का फलन
+        function handleImport(e) {
+            const f = e.target.files[0];
+            if(!f) return;
+            const r = new FileReader();
+            r.onload = (evt) => {
+                const data = new Uint8Array(evt.target.result);
+                const wb = XLSX.read(data, {type: 'array'});
+                const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                
+                let colIdx = { d: -1, q: -1, r: -1 };
+                let startRow = 0;
+
+                for(let i=0; i<Math.min(rows.length, 15); i++) {
+                    rows[i].forEach((cell, idx) => {
+                        let val = String(cell).toLowerCase();
+                        if(val.includes("desc") || val.includes("item") || val.includes("name") || val.includes("product")) colIdx.d = idx;
+                        if(val.includes("qty") || val.includes("unit") || val.includes("quantity")) colIdx.q = idx;
+                        if(val.includes("rate") || val.includes("price")) colIdx.r = idx;
+                    });
+                    if(colIdx.d !== -1) { startRow = i + 1; break; }
+                }
+
+                if(colIdx.d === -1) { alert("Header Row not found in Excel! (Looking for Item, Qty, Rate)"); return; }
+
+                let count = 0;
+                for(let i=startRow; i<rows.length; i++) {
+                    let rData = rows[i];
+                    if(rData[colIdx.d]) {
+                        let name = String(rData[colIdx.d]).toUpperCase().trim();
+                        let q = parseFloat(String(rData[colIdx.q] || 0).replace(/[^\d.-]/g, '')) || 0;
+                        let rt = parseFloat(String(rData[colIdx.r] || 0).replace(/[^\d.-]/g, '')) || 0;
+                        if(name) { db.push({ d: name, q: q, r: rt, t: q * rt }); count++; }
+                    }
+                }
+                sync();
+                alert("Smart Import Success! Added " + count + " items.");
+            };
+            r.readAsArrayBuffer(f);
+        }
+
+        // एक्सेल फाइल डाउनलोड करने का फलन
+        function exportExcel() {
+            if(db.length === 0) return;
+            const q = document.getElementById('srch').value.toLowerCase();
+            const filtered = db.filter(it => it.d.toLowerCase().includes(q));
+            let toExp = db, fN = "Stock_Full.xlsx";
+            if(q && filtered.length < db.length) {
+                if(confirm("Export Filtered items only?")){ toExp = filtered; fN = "Stock_Filtered.xlsx"; }
+            }
+            const ws = XLSX.utils.json_to_sheet(toExp.map((it, i) => ({"S.No": i+1, "Description": it.d, "Qty": it.q, "Rate": it.r, "Total": it.t})));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+            XLSX.writeFile(wb, fN);
+        }
+
+        // डिलीट मोड को चालू अथवा बंद करने का फलन
+        function toggleDel() {
+            delMode = !delMode;
+            document.getElementById('mainTbl').classList.toggle('delete-mode', delMode);
+            document.getElementById('delPanel').classList.toggle('hidden', !delMode);
+            document.getElementById('delModeBtn').classList.toggle('bg-red-600', delMode);
+            document.getElementById('delModeBtn').classList.toggle('text-white', delMode);
+            if(!delMode) resetChecks();
+        }
+
+        // चुने हुए सभी आइटम को हटाने का फलन
+        function bulkDel() {
+            const sel = document.querySelectorAll('.row-chk:checked');
+            if(sel.length === 0) return;
+            if(!confirm("Delete selected items?")) return;
+            const ids = Array.from(sel).map(c => parseInt(c.dataset.i));
+            db = db.filter((_, i) => !ids.includes(i));
+            sync(); toggleDel();
+        }
+
+        // किसी एक आइटम को हटाने का फलन
+        function deleteSingle() {
+            if(editIdx !== -1 && confirm("Delete?")) { db.splice(editIdx, 1); sync(); resetInputs(); }
+        }
+
+        // चुने गए खानों की गिनती दिखाने का फलन
+        function updateSel() { document.getElementById('selTxt').innerText = document.querySelectorAll('.row-chk:checked').length + " SELECTED"; }
+        
+        // सभी खानों को एक साथ चुनने का फलन
+        function selectAll() { document.querySelectorAll('.row-chk').forEach(c => c.checked = document.getElementById('masterChk').checked); updateSel(); }
+        
+        // सभी चुने हुए खानों को खाली करने का फलन
+        function resetChecks() { document.getElementById('masterChk').checked = false; document.querySelectorAll('.row-chk').forEach(c => c.checked = false); updateSel(); }
+        
+        // प्रविष्टि खानों को खाली करने का फलन
+        function resetInputs() { dI.value=''; qI.value=''; rI.value=''; document.getElementById('rowSub').innerText='₹ 0.00'; editIdx=-1; document.getElementById('saveBtn').innerText="SAVE"; document.getElementById('singleDelBtn').classList.add('hidden'); dI.focus(); }
+    </script>
+</body>
+</html>
+
+  
+    
